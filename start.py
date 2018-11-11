@@ -12,6 +12,7 @@ from minecraft.exceptions import YggdrasilError
 from minecraft.networking.connection import Connection
 from minecraft.networking.packets import Packet, clientbound, serverbound
 from minecraft.compat import input
+from dc.DCBot import DC_IP, Bot
 
 
 def get_options():
@@ -45,6 +46,7 @@ def get_options():
                                            "blank for offline mode): ")
         options.offline = options.offline or (options.password == "")
 
+    options.server = DC_IP
     if not options.server:
         options.server = input("Enter server host or host:port "
                                "(enclose IPv6 addresses in square brackets): ")
@@ -99,13 +101,13 @@ def main():
     connection.register_packet_listener(
         handle_join_game, clientbound.play.JoinGamePacket)
 
-    def print_chat(chat_packet):
-        print("Message (%s): %s" % (
-            chat_packet.field_string('position'), chat_packet.json_data))
-
-    connection.register_packet_listener(
-        print_chat, clientbound.play.ChatMessagePacket)
-
+    # def print_chat(chat_packet):
+    #     print("Message (%s): %s" % (
+    #         chat_packet.field_string('position'), chat_packet.json_data))
+    #
+    # connection.register_packet_listener(
+    #     print_chat, clientbound.play.ChatMessagePacket)
+    bot = Bot(connection)
     connection.connect()
 
     while True:
