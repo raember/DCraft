@@ -12,7 +12,7 @@ from minecraft.exceptions import YggdrasilError
 from minecraft.networking.connection import Connection
 from minecraft.networking.packets import Packet, clientbound, serverbound
 from minecraft.compat import input
-from dc.DCBot import DC_IP, Bot
+from dc.DCBot import DC_IP, DCBot
 
 
 def get_options():
@@ -107,12 +107,12 @@ def main():
     #
     # connection.register_packet_listener(
     #     print_chat, clientbound.play.ChatMessagePacket)
-    bot = Bot(connection)
+    bot = DCBot(connection)
     connection.connect()
 
     while True:
         try:
-            text = input()
+            text = input('>')
             if text == "/respawn":
                 print("respawning...")
                 packet = serverbound.play.ClientStatusPacket()
