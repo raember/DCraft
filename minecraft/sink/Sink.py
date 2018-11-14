@@ -16,7 +16,7 @@ import re
 
 DC_IP = "172.106.14.42"
 
-class Bot(object):
+class Sink(object):
     """
     Base class for Bots. Prints every text message, when forwarded.
     """
@@ -30,17 +30,18 @@ class Bot(object):
         """
         self.conn = connection
         self.conn.register_packet_listener(self._read_chat, cplay.ChatMessagePacket)
+        self.conn.register_packet_listener(self._read_chat, cplay.JoinGamePacket)
 
     def _read_chat(self, packet):
         """
-        Reads an incoming chat packet and prints it
-        :param packet: The packet to read
+        Reads an incoming chat packet.
+        :param packet: The chat packet to read
         :type packet: cplay.ChatMessagePacket
         """
-        pos = packet.field_string('position')
+        pos = packet.position
         jsn = json.loads(packet.json_data)
-        fmt_string, links = self._to_string(jsn)
-        string = re.compile(r"\033\[\d{2}m").sub("", fmt_string)
+        fmt_string, links = self._dict_to_string(jsn)
+        string = re.compile(r"\033\[\d{2}?m").sub("", fmt_string)
 
         self._chat_sink(pos, jsn, fmt_string, string, links)
 
@@ -60,7 +61,7 @@ class Bot(object):
         """
         raise NotImplementedError("Must be overwritten by subclass.")
 
-    def _to_string(self, jsn):
+    def _dict_to_string(self, jsn):
         """
         Converts a JSON object from chat messages to a string.
         :param jsn: The json data from the chat message
@@ -196,13 +197,13 @@ OLDCOLOR2COLORSTR = {
     '§n': 'reset'
 }
 
-class DCBot(Bot):
+class NormalSink(Sink):
     def __init__(self, connection):
         super().__init__(connection)
 
     def _chat_sink(self, position, json_data, formatted_string, plain_string, links):
         """
-        Consumes chat message. Must be overwritten
+        Consumes chat message and prints it.
         :param position: The position of the chat message
         :type position: str
         :param json_data: The json dict with all the raw data
@@ -217,3 +218,68 @@ class DCBot(Bot):
         print("{}: {}".format(position[0], formatted_string))
         for link in links:
             print("Link: {}: {}".format(link['action'], link['value']))
+
+
+class ToFileSink(Sink):
+    def __init__(self, connection, sinkfilename="sinkedChat.txt"):
+        super().__init__(connection)
+        self.sinkfilename = sinkfilename
+
+    def _chat_sink(self, position, json_data, formatted_string, plain_string, links):
+        """
+        Consumes chat message and saves it to a file.
+        :param position: The position of the chat message
+        :type position: str
+        :param json_data: The json dict with all the raw data
+        :type json_data: dict
+        :param formatted_string: The formatted string
+        :type formatted_string: str
+        :param plain_string: The unformatted string
+        :type plain_string: str
+        :param links: List of links found in the string. Dict with action and value as fields.
+        :type links: list
+        """
+        packetmock = {
+            "json_data": json_data,
+            "position": position
+        }
+        with open(self.sinkfilename, 'a') as sinkfile:
+            sinkfile.write(json.dumps(packetmock))
+
+
+class SinkFileReader():
+    def __init__(self, sinkfilename="sinkedChat.txt"):
+        self.sinkfilename = sinkfilename
+        self.chatpackets = []
+        self.callback = None
+
+    def read_file(self):
+        """
+        Reads the sink file and loads the chat messages.
+        """
+        with open(self.sinkfilename, 'r') as sinkfile:
+            lines = sinkfile.readlines()
+        for line in lines:
+            jsn = json.loads(line)
+            packetmock = {}
+            packetmock.json_data = jsn['json_data']
+            packetmock.position = jsn['position']
+            self.chatpackets.append(packetmock)
+
+    def register_packet_listener(self, callback, packet, **kwargs):
+        """
+        Mocks connection.
+        :param callback: The callback function for the packet
+        :param packet: The packet to filter for
+        :param kwargs: others
+        """
+        self.callback = callback
+
+    def dispatch(self):
+        """
+        Dispatches a chat message to the listener.
+        :return: Whether there are still messages to dispatch.
+        :rtype: bool
+        """
+        self.callback(self.chatpackets.pop())
+        return len(self.chatpackets) != 0

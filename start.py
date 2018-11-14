@@ -12,7 +12,7 @@ from minecraft.exceptions import YggdrasilError
 from minecraft.networking.connection import Connection
 from minecraft.networking.packets import Packet, clientbound, serverbound
 from minecraft.compat import input
-from dc.DCBot import DC_IP, DCBot
+from minecraft.sink.Sink import DC_IP, NormalSink, ToFileSink
 
 
 def get_options():
@@ -69,7 +69,10 @@ def main():
         connection = Connection(
             options.address, options.port, username=options.username)
     else:
+        # authentication.AUTH_SERVER = "https://auth.mcleaks.net/v1"
+        # authentication.SESSION_SERVER = "https://auth.mcleaks.net/v1"
         auth_token = authentication.AuthenticationToken()
+        # auth_token.server = options.address
         try:
             auth_token.authenticate(options.username, options.password)
         except YggdrasilError as e:
@@ -107,7 +110,8 @@ def main():
     #
     # connection.register_packet_listener(
     #     print_chat, clientbound.play.ChatMessagePacket)
-    bot = DCBot(connection)
+    printingSink = NormalSink(connection)
+    toFileSink = ToFileSink(connection)
     connection.connect()
 
     while True:

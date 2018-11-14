@@ -1,0 +1,23 @@
+{
+  "players": [
+    { // Minecraft account using email
+      "username": "",
+      "accessToken": "",
+      "selectedProfile": {
+          "id": "",
+          "name": ""
+      },
+      "requestUser": true // Updates user data when logging in
+    },
+    { // MCLeaks alt using alt token
+      "token": "JwMJLOOwQxooH56q",
+      "session": "",
+      "username": "",
+      "token-history": [
+        "ID7ZSKShtN8eYJXi",
+        "g2g3pYKnJA4Aa7bS",
+        "JZPLcjKUq8g8IFXN"
+      ]
+    }
+  ]
+}

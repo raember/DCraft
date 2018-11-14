@@ -63,6 +63,7 @@ class AuthenticationToken(object):
         self.access_token = access_token
         self.client_token = client_token
         self.profile = Profile()
+        # self.session = ''
 
     @property
     def authenticated(self):
@@ -109,13 +110,23 @@ class AuthenticationToken(object):
             "username": username,
             "password": password
         }
+        # payload = {
+        #     "token": username
+        # }
 
         res = _make_request(AUTH_SERVER, "authenticate", payload)
+        # res = _make_request(AUTH_SERVER, "redeem", payload)
 
         _raise_from_response(res)
 
         json_resp = res.json()
 
+        # print(json_resp)
+        # if not json_resp['success']:
+        #     print(json_resp['errorMessage'])
+        #     #ALT-TOKEN has expired or is not valid!
+        # self.username = json_resp['result']['mcname']
+        # self.session = json_resp['result']['session']
         self.username = username
         self.access_token = json_resp["accessToken"]
         self.client_token = json_resp["clientToken"]
@@ -250,9 +261,18 @@ class AuthenticationToken(object):
                             {"accessToken": self.access_token,
                              "selectedProfile": self.profile.to_dict(),
                              "serverId": server_id})
+        # payload = {
+        #     "session": self.session,
+        #     "mcname": self.username,
+        #     "serverhash": server_id,
+        #     "server": self.server
+        # }
+        # print("sending login request")
+        # res = _make_request(SESSION_SERVER, "joinserver", payload)
 
         if res.status_code != 204:
             _raise_from_response(res)
+        # print(res.json())
         return True
 
 
