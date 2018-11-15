@@ -258,9 +258,9 @@ class SinkFileReader():
         """
         with open(self.sinkfilename, 'r') as sinkfile:
             lines = sinkfile.readlines()
+        lines.reverse()
         for line in lines:
             jsn = json.loads(line)
-            print(jsn)
             chatpacket = cplay.ChatMessagePacket()
             chatpacket.set_values(
                 json_data=json.dumps(jsn['json_data']),
