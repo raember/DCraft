@@ -30,7 +30,6 @@ class Sink(object):
         """
         self.conn = connection
         self.conn.register_packet_listener(self._read_chat, cplay.ChatMessagePacket)
-        self.conn.register_packet_listener(self._read_chat, cplay.JoinGamePacket)
 
     def _read_chat(self, packet):
         """
@@ -38,7 +37,7 @@ class Sink(object):
         :param packet: The chat packet to read
         :type packet: cplay.ChatMessagePacket
         """
-        pos = packet.position
+        pos = packet.field_string('position')
         jsn = json.loads(packet.json_data)
         fmt_string, links = self._dict_to_string(jsn)
         string = re.compile(r"\033\[\d{2}?m").sub("", fmt_string)
@@ -215,7 +214,7 @@ class NormalSink(Sink):
         :param links: List of links found in the string. Dict with action and value as fields.
         :type links: list
         """
-        print("{}: {}".format(position[0], formatted_string))
+        print("{}: {}".format(position, formatted_string))
         for link in links:
             print("Link: {}: {}".format(link['action'], link['value']))
 
@@ -244,7 +243,7 @@ class ToFileSink(Sink):
             "position": position
         }
         with open(self.sinkfilename, 'a') as sinkfile:
-            sinkfile.write(json.dumps(packetmock))
+            sinkfile.write(json.dumps(packetmock) + '\n')
 
 
 class SinkFileReader():
