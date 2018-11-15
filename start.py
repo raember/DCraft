@@ -69,9 +69,8 @@ def main():
         connection = Connection(
             options.address, options.port, username=options.username)
     else:
-        # authentication.AUTH_SERVER = "https://auth.mcleaks.net/v1"
-        # authentication.SESSION_SERVER = "https://auth.mcleaks.net/v1"
         auth_token = authentication.AuthenticationToken()
+        auth_token = authentication.MCLeaksAuthenticationToken(server=options.address)
         # auth_token.server = options.address
         try:
             auth_token.authenticate(options.username, options.password)

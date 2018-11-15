@@ -1,5 +1,6 @@
 import requests
 import json
+import re
 from .exceptions import YggdrasilError
 
 #: The base url for Ygdrassil requests
@@ -15,6 +16,7 @@ class Profile(object):
     Container class for a MineCraft Selected profile.
     See: `<http://wiki.vg/Authentication>`_
     """
+
     def __init__(self, id_=None, name=None):
         self.id_ = id_
         self.name = name
@@ -63,7 +65,6 @@ class AuthenticationToken(object):
         self.access_token = access_token
         self.client_token = client_token
         self.profile = Profile()
-        # self.session = ''
 
     @property
     def authenticated(self):
@@ -110,23 +111,13 @@ class AuthenticationToken(object):
             "username": username,
             "password": password
         }
-        # payload = {
-        #     "token": username
-        # }
 
         res = _make_request(AUTH_SERVER, "authenticate", payload)
-        # res = _make_request(AUTH_SERVER, "redeem", payload)
 
         _raise_from_response(res)
 
         json_resp = res.json()
 
-        # print(json_resp)
-        # if not json_resp['success']:
-        #     print(json_resp['errorMessage'])
-        #     #ALT-TOKEN has expired or is not valid!
-        # self.username = json_resp['result']['mcname']
-        # self.session = json_resp['result']['session']
         self.username = username
         self.access_token = json_resp["accessToken"]
         self.client_token = json_resp["clientToken"]
@@ -324,3 +315,86 @@ def _raise_from_response(res):
         exception.yggdrasil_cause = json_resp.get("cause")
 
     raise exception
+
+
+MCLEAKS_AUTH_SERVER = 'https://auth.mcleaks.net/v1'
+MCLEAKS_SESSION_SERVER = 'https://auth.mcleaks.net/v1'
+
+
+class MCLeaksAuthenticationToken(AuthenticationToken):
+    session = ''
+    server = ''
+
+    def __init__(self, username=None, access_token=None, client_token=None, server=None):
+        """
+        Constructs an `AuthenticationToken` based on `access_token` and
+        `client_token`.
+
+        Parameters:
+            access_token - An `str` object containing the `access_token`.
+            client_token - An `str` object containing the `client_token`.
+
+        Returns:
+            A `AuthenticationToken` with `access_token` and `client_token` set.
+        """
+        super().__init__(username, access_token, client_token)
+        self.server = server
+
+    def authenticate(self, token, _):
+        """
+        Authenticates the user against https://auth.mcleaks.net/v1 using
+        the `token` parameter.
+
+        :param token: The alt-token received from mcleaks.
+        :type token: str
+        :return: Returns `True` if successful. Otherwise it will raise an exception.
+        :rtype: bool
+        :raise YggdrasilError:
+        """
+        if re.compile(r"^[a-zA-Z0-9]{16}$").match(token) is None:
+            raise YggdrasilError("Token doesn't seem to be a typical MCLeaks token.")
+        payload = {
+            "token": token
+        }
+
+        res = _make_request(MCLEAKS_AUTH_SERVER, "redeem", payload)
+
+        _raise_from_response(res)
+
+        json_resp = res.json()
+
+        # print(json_resp)
+        if not json_resp['success']:
+            print(json_resp['errorMessage'])
+            # ALT-TOKEN has expired or is not valid!
+            return False
+        self.username = json_resp['result']['mcname']
+        self.session = json_resp['result']['session']
+        return True
+
+    def join(self, server_id):
+        """
+        Informs the Mojang session-server that we're joining the MineCraft server with id `server_id`.
+
+        :param server_id: Server hash
+        :type server_id: str
+        :return: `True` if no errors occured
+        :rtype: bool
+        :raise YggdrasilError:
+        """
+        if not self.authenticated:
+            err = "AuthenticationToken hasn't been authenticated yet!"
+            raise YggdrasilError(err)
+
+        payload = {
+            "session": self.session,
+            "mcname": self.username,
+            "serverhash": server_id,
+            "server": self.server
+        }
+        res = _make_request(MCLEAKS_SESSION_SERVER, "joinserver", payload)
+
+        if res.status_code != 204:
+            _raise_from_response(res)
+        # print(res.json())
+        return True
