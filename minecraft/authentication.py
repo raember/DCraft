@@ -252,18 +252,9 @@ class AuthenticationToken(object):
                             {"accessToken": self.access_token,
                              "selectedProfile": self.profile.to_dict(),
                              "serverId": server_id})
-        # payload = {
-        #     "session": self.session,
-        #     "mcname": self.username,
-        #     "serverhash": server_id,
-        #     "server": self.server
-        # }
-        # print("sending login request")
-        # res = _make_request(SESSION_SERVER, "joinserver", payload)
 
         if res.status_code != 204:
             _raise_from_response(res)
-        # print(res.json())
         return True
 
 
@@ -340,6 +331,20 @@ class MCLeaksAuthenticationToken(AuthenticationToken):
         super().__init__(username, access_token, client_token)
         self.server = server
 
+    @property
+    def authenticated(self):
+        """
+        Attribute which is ``True`` when the token is authenticated and
+        ``False`` when it isn't.
+        """
+        if not self.username:
+            return False
+
+        if not self.profile:
+            return False
+
+        return True
+
     def authenticate(self, token, _):
         """
         Authenticates the user against https://auth.mcleaks.net/v1 using
@@ -363,13 +368,15 @@ class MCLeaksAuthenticationToken(AuthenticationToken):
 
         json_resp = res.json()
 
-        # print(json_resp)
+        print(json_resp)
         if not json_resp['success']:
             print(json_resp['errorMessage'])
             # ALT-TOKEN has expired or is not valid!
             return False
         self.username = json_resp['result']['mcname']
         self.session = json_resp['result']['session']
+        self.profile.id_ = ""
+        self.profile.name = json_resp['result']['mcname']
         return True
 
     def join(self, server_id):
@@ -396,5 +403,5 @@ class MCLeaksAuthenticationToken(AuthenticationToken):
 
         if res.status_code != 204:
             _raise_from_response(res)
-        # print(res.json())
+        print(res.json())
         return True

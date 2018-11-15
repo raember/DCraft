@@ -41,10 +41,10 @@ def get_options():
     if not options.username:
         options.username = input("Enter your username: ")
 
-    if not options.password and not options.offline:
-        options.password = getpass.getpass("Enter your password (leave "
-                                           "blank for offline mode): ")
-        options.offline = options.offline or (options.password == "")
+    # if not options.password and not options.offline:
+    #     options.password = getpass.getpass("Enter your password (leave "
+    #                                        "blank for offline mode): ")
+    #     options.offline = options.offline or (options.password == "")
 
     options.server = DC_IP
     if not options.server:
@@ -69,7 +69,7 @@ def main():
         connection = Connection(
             options.address, options.port, username=options.username)
     else:
-        auth_token = authentication.AuthenticationToken()
+        # auth_token = authentication.AuthenticationToken()
         auth_token = authentication.MCLeaksAuthenticationToken(server=options.address)
         # auth_token.server = options.address
         try:
@@ -110,7 +110,7 @@ def main():
     # connection.register_packet_listener(
     #     print_chat, clientbound.play.ChatMessagePacket)
     printingSink = NormalSink(connection)
-    toFileSink = ToFileSink(connection)
+    # toFileSink = ToFileSink(connection)
     connection.connect()
 
     while True:

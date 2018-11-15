@@ -260,10 +260,13 @@ class SinkFileReader():
             lines = sinkfile.readlines()
         for line in lines:
             jsn = json.loads(line)
-            packetmock = {}
-            packetmock.json_data = jsn['json_data']
-            packetmock.position = jsn['position']
-            self.chatpackets.append(packetmock)
+            print(jsn)
+            chatpacket = cplay.ChatMessagePacket()
+            chatpacket.set_values(
+                json_data=json.dumps(jsn['json_data']),
+                position=jsn['position']
+            )
+            self.chatpackets.append(chatpacket)
 
     def register_packet_listener(self, callback, packet, **kwargs):
         """
