@@ -1,34 +1,40 @@
-
 import json
 import logging
 import os
-from datetime import datetime
+import copy
 
 
 class Configuration:
     """Configuration class. Handles the management of all the configurations."""
-    filename = ''
+    filename = 'config.json'
+    path = ''
     log = None
     data = {}
     skel = {}
 
-    def __init__(self, filename="config.json"):
+    def __init__(self):
         self.log = logging.getLogger(self.__class__.__name__)
-        self.filename = filename
 
     def __getitem__(self, item):
         return self.data[item]
 
-    def load(self):
+    def load(self, path=''):
         """
         Loads data from file.
+        :param path: Path to config file or directory. Defaults to filename variable.
+        :type path: str
         :return: Success
         :rtype: bool
         """
-        if not os.path.exists(self.filename):
+        if path == '':
+            path = self.filename
+        elif os.path.isdir(path):
+            path += self.filename
+        self.path = path
+        if not os.path.exists(path):
             return False
         try:
-            with open(self.filename, 'r') as config_file:
+            with open(path, 'r') as config_file:
                 jsonstr = config_file.read()
                 if not jsonstr == '':
                     self.data = json.loads(jsonstr)
@@ -40,14 +46,20 @@ class Configuration:
             self.log.error(ex)
             return False
 
-    def save(self):
+    def save(self, path=''):
         """
         Saves data to file.
+        :param path: Path to config file or directory. Defaults to filename variable.
+        :type path: str
         :return: Success
         :rtype: bool
         """
+        if path == '':
+            path = self.path
+        if os.path.isdir(path):
+            path += self.filename
         try:
-            with open(self.filename, 'w') as fp:
+            with open(path, 'w') as fp:
                 json.dump(self.data, fp, indent=2)
         except FileNotFoundError as ex:
             self.log.error(ex)
@@ -56,34 +68,10 @@ class Configuration:
             self.log.error(ex)
             return False
 
-    def _default(self, key, value, node):
-        """Checks if key exists in dict and sets it to a default value if not.
-        :param key: The key to check for
-        :type key: str
-        :param value: The default value
-        :type value: object
-        :param node: The node to observe
-        :type node: dict
-        :return: True if the default has been set
-        :rtype: bool
-        """
-        if key not in node:
-            node[key] = value
-            return True
-        return False
-
     def complete_data(self):
-        """Completes datastructure.
-        :return: self
-        :rtype: Configuration
-        """
-        if Keys.SERVER in self.data:
-            server = self.data[Keys.SERVER]
-            self._default(Keys.SERVER_ADDRESS, '8.8.8.8', server)
-            self._default(Keys.SERVER_PORT, 25565, server)
-        return self
+        """Completes datastructure."""
+        self.data: dict = self._complete_with_skel(self.data, self.skel)
 
-    # TODO: Finish this. Write unittest first.
     @staticmethod
     def _complete_with_skel(data, skel):
         """
@@ -96,21 +84,31 @@ class Configuration:
         :rtype: object
         """
         if data is None:
-            data = skel
-            return data
+            return copy.deepcopy(skel)
         if type(skel) == list:
-            pass
+            # Prepare datastructures
+            skellist: list = skel
+            if not type(data) == list:
+                datalist = []
+            else:
+                datalist: list = data
+            # Recurse copy value
+            for element in skellist:
+                if not element in datalist:
+                    datalist.append(Configuration._complete_with_skel(None, element))
+            return datalist
         elif type(skel) == dict:
+            # Prepare datastructures
             skeldict: dict = skel
+            if not type(data) == dict:
+                datadict = {}
+            else:
+                datadict: dict = data
+            # Recurse copy value
             for key in skeldict:
-                if key not in data:
-                    pass
+                if key not in datadict:
+                    datadict[key] = None
+                datadict[key] = Configuration._complete_with_skel(datadict[key], skeldict[key])
+            return datadict
         else:
-            if data is None:
-                data = skel
-
-
-class Keys():
-    SERVER = 'server'
-    SERVER_ADDRESS = 'address'
-    SERVER_PORT = 'port'
+            return data

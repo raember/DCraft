@@ -18,6 +18,7 @@ from minecraft.networking.connection import Connection
 from minecraft.networking.packets import Packet, clientbound, serverbound
 from minecraft.compat import input
 from minecraft.sink.Sink import DC_IP, NormalSink, ToFileSink
+from Configuration import Configuration
 
 
 class Main:
@@ -97,6 +98,33 @@ class Main:
             except KeyboardInterrupt:
                 print("Bye!")
                 sys.exit()
+
+
+class AppConfig(Configuration):
+    class Keys():
+        SERVER = 'server'
+        SERVER_ADDRESS = 'address'
+        SERVER_PORT = 'port'
+    skel = {
+        Keys.SERVER: {
+            Keys.SERVER_ADDRESS: '8.8.8.8',
+            Keys.SERVER_PORT: 25565
+        }
+    }
+
+class ProfileConfig(Configuration):
+    class Keys():
+        EMAIL = 'email'
+        PASSWORD = 'password'
+        TYPE = 'type'
+        ACCESSTOKEN = 'accesstoken'
+    filename = 'profile.json'
+    skel = {
+        Keys.EMAIL: '',
+        Keys.PASSWORD: '',
+        Keys.TYPE: 'mojang',
+        Keys.ACCESSTOKEN: ''
+    }
 
 
 if __name__ == "__main__":
