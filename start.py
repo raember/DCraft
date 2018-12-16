@@ -7,12 +7,13 @@ import sys
 import re
 from optparse import OptionParser
 
+from Configuration import Configuration
 from minecraft import authentication
 from minecraft.exceptions import YggdrasilError
 from minecraft.networking.connection import Connection
 from minecraft.networking.packets import Packet, clientbound, serverbound
 from minecraft.compat import input
-from minecraft.sink.Sink import DC_IP, NormalSink, ToFileSink
+from minecraft.sink.Sink import DC_IP
 
 
 def get_options():
