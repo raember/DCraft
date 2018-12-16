@@ -1,6 +1,7 @@
 """
 This module is the focal point of the DC bot
 """
+from typing import List, Dict, Union, Tuple
 
 from minecraft.networking.connection import Connection
 from minecraft.networking.packets import Packet, clientbound, serverbound
@@ -16,57 +17,67 @@ import re
 
 DC_IP = "172.106.14.42"
 
-class Sink(object):
-    """
-    Base class for Bots. Prints every text message, when forwarded.
-    """
-    conn = None
 
-    def __init__(self, connection):
+class Sink:
+    """
+    Base class for Sinks.
+    """
+    connection = None
+
+    def __init__(self, connection: Connection):
         """
         Sets up a bot
         :param connection: The connection to be used
-        :type connection: Connection
         """
-        self.conn = connection
-        self.conn.register_packet_listener(self._read_chat, cplay.ChatMessagePacket)
+        self.connection = connection
 
-    def _read_chat(self, packet):
+    def register(self):
+        raise NotImplementedError("Must be overwritten by subclass.")
+
+    def receive_packet(self, packet: Packet):
+        raise NotImplementedError("Must be overwritten by subclass.")
+
+
+class ChatSink(Sink):
+    """
+    Sink receiving only chat messages
+    """
+
+    def __init__(self, connection: Connection):
+        super().__init__(connection)
+        self.register()
+
+    def register(self):
+        self.connection.register_packet_listener(self.receive_packet, cplay.ChatMessagePacket)
+
+    def receive_packet(self, packet: cplay.ChatMessagePacket):
         """
         Reads an incoming chat packet.
         :param packet: The chat packet to read
-        :type packet: cplay.ChatMessagePacket
         """
         pos = packet.field_string('position')
         jsn = json.loads(packet.json_data)
         fmt_string, links = self._dict_to_string(jsn)
         string = re.compile(r"\033\[\d{2}?m").sub("", fmt_string)
 
-        self._chat_sink(pos, jsn, fmt_string, string, links)
+        self.receive_chat_packet(pos, jsn, fmt_string, string, links)
 
-    def _chat_sink(self, position, json_data, formatted_string, plain_string, links):
+    def receive_chat_packet(self, position: str, json_data: dict, formatted_string: str, plain_string: str,
+                            links: List[Dict[str, str]]):
         """
         Consumes chat message. Must be overwritten
         :param position: The position of the chat message
-        :type position: str
         :param json_data: The json dict with all the raw data
-        :type json_data: dict
         :param formatted_string: The formatted string
-        :type formatted_string: str
         :param plain_string: The unformatted string
-        :type plain_string: str
         :param links: List of links found in the string. Dict with action and value as fields.
-        :type links: list
         """
         raise NotImplementedError("Must be overwritten by subclass.")
 
-    def _dict_to_string(self, jsn):
+    def _dict_to_string(self, jsn: dict) -> Tuple[str, List[Dict[str, str]]]:
         """
         Converts a JSON object from chat messages to a string.
         :param jsn: The json data from the chat message
-        :type jsn: dict
-        :return: The converted string
-        :rtype: str, list
         """
         # print(jsn)
         string = ''
@@ -196,35 +207,34 @@ OLDCOLOR2COLORSTR = {
     '§n': 'reset'
 }
 
-class NormalSink(Sink):
-    def __init__(self, connection):
+
+class Chat2StdOutSink(ChatSink):
+    """
+    Prints every text message when forwarded.
+    """
+    def __init__(self, connection: Connection):
         super().__init__(connection)
 
-    def _chat_sink(self, position, json_data, formatted_string, plain_string, links):
+    def receive_chat_packet(self, position: str, json_data: dict, formatted_string: str, plain_string: str, links: List[Dict[str, str]]):
         """
         Consumes chat message and prints it.
         :param position: The position of the chat message
-        :type position: str
         :param json_data: The json dict with all the raw data
-        :type json_data: dict
         :param formatted_string: The formatted string
-        :type formatted_string: str
         :param plain_string: The unformatted string
-        :type plain_string: str
         :param links: List of links found in the string. Dict with action and value as fields.
-        :type links: list
         """
         print("{}: {}".format(position, formatted_string))
         for link in links:
             print("Link: {}: {}".format(link['action'], link['value']))
 
 
-class ToFileSink(Sink):
-    def __init__(self, connection, sinkfilename="sinkedChat.txt"):
+class ToFileSink(ChatSink):
+    def __init__(self, connection: Connection, sinkfilename="sinkedChat.txt"):
         super().__init__(connection)
         self.sinkfilename = sinkfilename
 
-    def _chat_sink(self, position, json_data, formatted_string, plain_string, links):
+    def receive_chat_packet(self, position, json_data, formatted_string, plain_string, links):
         """
         Consumes chat message and saves it to a file.
         :param position: The position of the chat message

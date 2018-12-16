@@ -1,6 +1,7 @@
 import requests
 import json
 import re
+import datetime
 from .exceptions import YggdrasilError
 
 #: The base url for Ygdrassil requests
@@ -405,3 +406,33 @@ class MCLeaksAuthenticationToken(AuthenticationToken):
             _raise_from_response(res)
         print(res.json())
         return True
+
+    def check_token_status(self, token):
+        """
+        Checks the alt token status
+        :param token: Alt token from MCLeaks
+        :type token: str
+        :return:
+        """
+        MCLEAKS_TOKEN_STATUS = "https://mcleaks.net/tokenstatusajax"
+        res = requests.get("{}?t={}".format(MCLEAKS_TOKEN_STATUS, token), headers=HEADERS)
+        jsn = res.json()
+        if jsn['status'] == 'redeemed':
+            print("Token has already been redeemed.")
+        elif jsn['status'] == 'valid':
+            print("Token is still valid.")
+            rem = jsn['remaining']
+            if rem.endswith('minutes') or rem.endswith('minute'):
+                minutes = re.compile(r"^\d+").match(rem).group(0)
+                timespn = datetime.timedelta(minutes=int(minutes))
+            elif rem.endswith('seconds') or rem.endswith('second'):
+                seconds = re.compile(r"^\d+").match(rem).group(0)
+                timespn = datetime.timedelta(seconds=int(seconds))
+            else:
+                print(jsn)
+                return
+            print("{} left.".format(timespn))
+        elif jsn['status'] == 'invalid':
+            print("Token is invalid.")
+        else:
+            print(jsn)

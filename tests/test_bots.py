@@ -11,6 +11,6 @@ class ChatMessageClassifier(unittest.TestCase):
         self.conn.read_file()
 
     def test_chat_cassification(self):
-        sink = NormalSink(self.conn)
+        sink = Chat2StdOutSink(self.conn)
         while self.conn.dispatch():
             pass
