@@ -12,8 +12,7 @@ from minecraft.exceptions import YggdrasilError
 from minecraft.networking.connection import Connection
 from minecraft.networking.packets import Packet, clientbound, serverbound
 from minecraft.compat import input
-from minecraft.sink.Sink import DC_IP, Chat2StdOutSink, ToFileSink
-from minecraft.bot.Bot import DcBot
+from minecraft.sink.Sink import DC_IP, NormalSink, ToFileSink
 
 
 def get_options():
@@ -70,9 +69,8 @@ def main():
         connection = Connection(
             options.address, options.port, username=options.username)
     else:
-        auth_token = authentication.AuthenticationToken()
-        # auth_token = authentication.MCLeaksAuthenticationToken(server=options.address)
-        # auth_token.check_token_status(options.username)
+        # auth_token = authentication.AuthenticationToken()
+        auth_token = authentication.MCLeaksAuthenticationToken(server=options.address)
         # auth_token.server = options.address
         try:
             auth_token.authenticate(options.username, options.password)
@@ -99,25 +97,64 @@ def main():
         connection.register_packet_listener(
             print_outgoing, Packet, outgoing=True)
 
-    # def handle_join_game(join_game_packet):
-    #     print('Connected.')
-    #
-    # connection.register_packet_listener(
-    #     handle_join_game, clientbound.play.JoinGamePacket)
-    #
+    def handle_join_game(join_game_packet):
+        print('Connected.')
+
+    connection.register_packet_listener(
+        handle_join_game, clientbound.play.JoinGamePacket)
+
     # def print_chat(chat_packet):
     #     print("Message (%s): %s" % (
     #         chat_packet.field_string('position'), chat_packet.json_data))
     #
     # connection.register_packet_listener(
     #     print_chat, clientbound.play.ChatMessagePacket)
-    # printingSink = Chat2StdOutSink(connection)
+    printingSink = NormalSink(connection)
     # toFileSink = ToFileSink(connection)
-
-    bot = DcBot(connection)
     connection.connect()
-    while bot.read_input():
-        pass
+
+    while True:
+        try:
+            text = input('>')
+            if text == "/respawn":
+                print("respawning...")
+                packet = serverbound.play.ClientStatusPacket()
+                packet.action_id = serverbound.play.ClientStatusPacket.RESPAWN
+                connection.write_packet(packet)
+            else:
+                packet = serverbound.play.ChatPacket()
+                packet.message = text
+                connection.write_packet(packet)
+        except KeyboardInterrupt:
+            print("Bye!")
+            sys.exit()
+
+
+class AppConfig(Configuration):
+    class Keys():
+        SERVER = 'server'
+        SERVER_ADDRESS = 'address'
+        SERVER_PORT = 'port'
+    skel = {
+        Keys.SERVER: {
+            Keys.SERVER_ADDRESS: '8.8.8.8',
+            Keys.SERVER_PORT: 25565
+        }
+    }
+
+class ProfileConfig(Configuration):
+    class Keys():
+        EMAIL = 'email'
+        PASSWORD = 'password'
+        TYPE = 'type'
+        ACCESSTOKEN = 'accesstoken'
+    filename = 'profile.json'
+    skel = {
+        Keys.EMAIL: '',
+        Keys.PASSWORD: '',
+        Keys.TYPE: 'mojang',
+        Keys.ACCESSTOKEN: ''
+    }
 
 
 if __name__ == "__main__":

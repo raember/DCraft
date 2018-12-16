@@ -19,5 +19,9 @@
         "JZPLcjKUq8g8IFXN"
       ]
     }
-  ]
+  ],
+  "server": {
+    "address": "172.106.14.42",
+    "port": 25565
+  }
 }
