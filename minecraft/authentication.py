@@ -369,11 +369,10 @@ class MCLeaksAuthenticationToken(AuthenticationToken):
 
         json_resp = res.json()
 
-        print(json_resp)
+        # print(json_resp)
         if not json_resp['success']:
-            print(json_resp['errorMessage'])
             # ALT-TOKEN has expired or is not valid!
-            return False
+            raise YggdrasilError(json_resp['errorMessage'])
         self.username = json_resp['result']['mcname']
         self.session = json_resp['result']['session']
         self.profile.id_ = ""
@@ -430,9 +429,11 @@ class MCLeaksAuthenticationToken(AuthenticationToken):
                 timespn = datetime.timedelta(seconds=int(seconds))
             else:
                 print(jsn)
-                return
+                raise Exception("Unhandled remaining time.")
             print("{} left.".format(timespn))
         elif jsn['status'] == 'invalid':
             print("Token is invalid.")
+            return False
         else:
             print(jsn)
+            raise Exception("Unhandled response status.")

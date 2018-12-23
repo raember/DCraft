@@ -1,5 +1,5 @@
 import unittest
-from minecraft.sink.Sink import *
+from minecraft.sink.sink import *
 
 
 class ChatMessageClassifier(unittest.TestCase):

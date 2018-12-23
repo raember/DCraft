@@ -18,6 +18,9 @@ class Configuration:
     def __getitem__(self, item):
         return self.data[item]
 
+    def __setitem__(self, item, value):
+        self.data[item] = value
+
     def load(self, path=''):
         """
         Loads data from file.

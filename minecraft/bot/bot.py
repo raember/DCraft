@@ -7,12 +7,13 @@ from minecraft.networking.packets import Packet
 from minecraft.networking.packets.clientbound import play as cplay
 from minecraft.networking.packets.serverbound import play as splay
 from minecraft.networking.connection import Connection
-from minecraft.sink.Sink import Sink, ChatSink
+from minecraft.sink.sink import Sink, ChatSink
 
 from minecraft.networking.types import (
     Integer, FixedPointInteger, UnsignedByte, Byte, Boolean, UUID, Short,
     VarInt, Double, Float, String, Enum,
 )
+
 
 class Bot():
     def __init__(self, connection: Connection):
@@ -121,7 +122,8 @@ class Bot():
         reduced_debug_info: Boolean = packet.reduced_debug_info
         self.receive_join_game(entity_id, game_mode, dimension, difficulty, max_players, level_type, reduced_debug_info)
 
-    def receive_join_game(self, entity_id: int, game_mode: int, dimension: int, difficulty: int, max_players: int, level_type: str, reduced_debug_info: bool):
+    def receive_join_game(self, entity_id: int, game_mode: int, dimension: int, difficulty: int, max_players: int,
+                          level_type: str, reduced_debug_info: bool):
         print('Joined game')
 
     def _receive_player_list_item(self, packet: cplay.PlayerListItemPacket):
@@ -149,7 +151,8 @@ class Bot():
     def _receive_disconnect(self, packet: cplay.DisconnectPacket):
         jsn = json.loads(packet.json_data)
         string = self._dict_to_string(jsn)
-        raise Exception("Disconnected: {}".format(string))
+        print("Disconnected: {}".format(string))
+        raise KeyboardInterrupt()
 
 
 class TerminalCodes(Enum):
@@ -236,7 +239,8 @@ OLDCOLOR2COLORSTR = {
     '§d': 'light_purple',
     '§3': 'dark_aqua',
     '§b': 'aqua',
-    '§n': 'reset'
+    '§n': 'reset',
+    '§r': 'reset'
 }
 
 
